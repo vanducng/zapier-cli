@@ -1,0 +1,35 @@
+{
+  "name": "zapier-cli",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Automation-friendly CLI for inspecting Zaps and managing owned Zapier code workflows",
+  "license": "UNLICENSED",
+  "type": "module",
+  "bin": {
+    "zap": "lib/index.js"
+  },
+  "files": [
+    "lib",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=22.12.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "npm run build && node --test test/*.test.mjs",
+    "test:package": "node scripts/package-smoke.mjs",
+    "verify": "npm run typecheck && npm test && npm run test:package",
+    "prepack": "npm run build"
+  },
+  "dependencies": {
+    "@zapier/zapier-sdk": "0.112.3",
+    "@zapier/zapier-sdk-cli": "0.84.3",
+    "commander": "15.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "22.20.4",
+    "typescript": "7.0.2"
+  }
+}
