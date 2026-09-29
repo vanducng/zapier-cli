@@ -39,6 +39,13 @@ function parsePositive(source: unknown, flag: string): number | undefined {
   return value;
 }
 
+function parseOffset(source: unknown, flag: string): number | undefined {
+  if (source === undefined) return undefined;
+  const value = Number(source);
+  if (!Number.isInteger(value) || value < 0) throw validation(`${flag} must be a non-negative integer.`);
+  return value;
+}
+
 function collectFiles(path: string, root: string, files: Record<string, string>): void {
   const stats = statSync(path);
   if (stats.isDirectory()) {
@@ -159,6 +166,26 @@ export function createProgram(version: string, getCall: () => Call, write: Write
     const result = await call("runAction", { app: MANAGER_APP, actionType: "search", action: "zap", connection: await managerConnection(call, options), inputs: { title: options.title, account: options.account } });
     return { data: (result.data as Record<string, unknown>[]).map(zapSummary) };
   });
+  action(
+    zaps
+      .command("config")
+      .description("Read Zap steps and inputs from the Workflow API")
+      .argument("[id]", "Workflow API Zap id; omit to list a page")
+      .option("--include-shared", "include Zaps shared with the user; needs scope zap:account:all")
+      .option("--expand <fields>", "comma-separated fields to expand", "steps.action")
+      .option("--limit <n>", "page size")
+      .option("--offset <n>", "page offset"),
+    async (id: string | undefined, options: Options) => {
+      if (typeof id !== "undefined" && typeof id !== "string") throw validation("Zap id must be a string.");
+      const expand = String(options.expand ?? "").trim();
+      if (!expand) throw validation("--expand must list at least one field.");
+      const query = { expand, includeShared: options.includeShared === true ? true : undefined, limit: parsePositive(options.limit, "--limit"), offset: parseOffset(options.offset, "--offset") };
+      if (id?.trim()) return (await call("getZapConfiguration", { ...query, id: id.trim() })).data;
+      const result = await call("listZapConfigurations", query);
+      const page = result.page;
+      return { data: result.data, count: page?.count ?? null, offset: page?.offset ?? null, limit: page?.limit ?? null, next_offset: page?.next_offset ?? null };
+    },
+  );
   action(zaps.command("convert").description("Create a new disabled code workflow from a Zap; the Zap is untouched").argument("<zap>", "Zap id").option("--name <name>", "workflow name").option("--private", "private to the creating user").option("--confirm", "confirm creating the workflow"), async (zap: string, options: Options) => {
     requireConfirm(options);
     const { data } = await call("importWorkflow", { zap, name: options.name, private: options.private === true ? true : undefined });

@@ -10,11 +10,14 @@ try {
   execFileSync("npm", ["install", "--global", "--prefix", prefix, join(work, tarball)], { stdio: "ignore" });
   const bin = join(prefix, "bin", "zap");
   const check = (args, expectCode, predicate, label) => {
-    const result = spawnSync(bin, args, { encoding: "utf8", env: { ...process.env, ZAP_CLI_HOME: join(work, "home") } });
+    const result = spawnSync(bin, args, { encoding: "utf8", env: { ...process.env, ZAP_CLI_HOME: join(work, "home"), ZAP_WORKFLOW_ACCESS_TOKEN: "" } });
     if (result.status !== expectCode || !predicate(result)) throw new Error(`${label} failed: status=${result.status} stdout=${result.stdout} stderr=${result.stderr}`);
   };
   check(["--version"], 0, (r) => /^\d+\.\d+\.\d+\n$/u.test(r.stdout) && r.stderr === "", "version");
   check(["--help"], 0, (r) => r.stdout.includes("workflows") && r.stderr === "", "help");
+  check(["zaps", "--help"], 0, (r) => r.stdout.includes("config") && r.stderr === "", "zaps help");
+  check(["zaps", "config", "--offset", "-1"], 1, (r) => r.stdout === "" && JSON.parse(r.stderr).error.code === "validation_error", "config validation");
+  check(["zaps", "config"], 1, (r) => r.stdout === "" && JSON.parse(r.stderr).error.code === "auth_required", "config auth");
   check(["workflows", "enable", "w1"], 1, (r) => r.stdout === "" && JSON.parse(r.stderr).error.code === "confirmation_required", "confirm gate");
   check(["workflows", "delete", "w1", "--confirm"], 1, (r) => JSON.parse(r.stderr).error.code === "not_owned", "ownership gate");
   check(["nope"], 1, (r) => JSON.parse(r.stderr).error.code === "usage_error", "usage error");

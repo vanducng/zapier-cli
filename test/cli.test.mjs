@@ -112,6 +112,29 @@ test("convert records the imported workflow with its source zap", async () => {
   assert.equal(JSON.parse(readFileSync(ledgerPath(), "utf8")).workflows.w5.source_zap_id, "374");
 });
 
+test("zaps config reads Workflow API configuration and does not call Zapier Manager", async () => {
+  const { output, calls } = await run(["zaps", "config", "--limit", "5", "--offset", "10", "--include-shared"], {
+    listZapConfigurations: { data: [{ id: "zap-1", steps: [{ inputs: { stage: "CLOSED_WON" } }] }], page: { count: 11, offset: 10, limit: 5, next_offset: null } },
+  });
+  assert.deepEqual(calls, [{ method: "listZapConfigurations", input: { expand: "steps.action", includeShared: true, limit: 5, offset: 10 } }]);
+  assert.equal(output[0].data[0].steps[0].inputs.stage, "CLOSED_WON");
+  assert.equal(output[0].next_offset, null);
+  assert.equal(output[0].count, 11);
+});
+
+test("zaps config with an id returns one Zap", async () => {
+  const { output, calls } = await run(["zaps", "config", "zap-9"], { getZapConfiguration: { data: { id: "zap-9", steps: [] } } });
+  assert.equal(calls[0].method, "getZapConfiguration");
+  assert.equal(calls[0].input.id, "zap-9");
+  assert.deepEqual(output[0], { id: "zap-9", steps: [] });
+});
+
+test("zaps config rejects a bad offset before any call", async () => {
+  const { error, calls } = await run(["zaps", "config", "--offset", "-1"], {});
+  assert.equal(error?.code, "validation_error");
+  assert.equal(calls.length, 0);
+});
+
 test("zaps list resolves the manager connection and normalizes ids", async () => {
   const { output, calls } = await run(["zaps", "list", "--folder", "f1"], {
     findFirstConnection: { data: { id: "c1" } },

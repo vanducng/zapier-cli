@@ -1,16 +1,26 @@
 {
   "name": "zapier-cli",
   "version": "0.1.0",
-  "private": true,
   "description": "Automation-friendly CLI for inspecting Zaps and managing owned Zapier code workflows",
-  "license": "UNLICENSED",
+  "license": "MIT",
+  "author": "Duc Nguyen <me@vanducng.dev>",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/vanducng/zapier-cli.git"
+  },
+  "homepage": "https://github.com/vanducng/zapier-cli#readme",
+  "bugs": "https://github.com/vanducng/zapier-cli/issues",
+  "publishConfig": {
+    "access": "public"
+  },
   "type": "module",
   "bin": {
     "zap": "lib/index.js"
   },
   "files": [
     "lib",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "engines": {
     "node": ">=22.12.0"

@@ -2,6 +2,8 @@
 
 Automation-friendly CLI over the Zapier SDK: inspect classic Zaps, debug and manage Zapier code workflows.
 
+Source: https://github.com/vanducng/zapier-cli
+
 ## Safety model
 
 - Classic Zaps are read-only. `zap` has no command that edits, toggles, or deletes a Zap, and it refuses every Zapier Manager write action.
@@ -21,7 +23,7 @@ zap auth status
 
 ## Output contract
 
-- Success: one JSON value on stdout, empty stderr, exit 0. Lists return `{ "data": [...], "next_cursor": string|null }`.
+- Success: one JSON value on stdout, empty stderr, exit 0. Lists return `{ "data": [...], "next_cursor": string|null }`. `zap zaps config` uses offset paging: `{ "data", "count", "offset", "limit", "next_offset" }`.
 - Failure: one JSON object on stderr `{ ok: false, error: { code, message, retryable, next_steps } }`, exit 1.
 - Error codes: `usage_error`, `validation_error`, `confirmation_required`, `not_owned`, `blocked_action`, `connection_required`, `auth_required`, `not_found`, `forbidden`, `conflict`, `rate_limited`, `provider_unavailable`, `provider_error`, `unexpected_error`.
 
@@ -36,7 +38,7 @@ Run `zap <group> --help` for exact flags.
 | `actions` | `list`, `get`, `inputs`, `choices`, `run` (write types need `--confirm`) |
 | `connections` | `list`, `get` |
 | `folders` | `list` |
-| `zaps` | `list`, `search`, `convert` |
+| `zaps` | `list`, `search`, `config`, `convert` |
 | `workflows` | `list`, `get`, `versions`, `version`, `validate`, `create`, `update`, `enable`, `disable`, `trigger`, `publish`, `delete` |
 | `drafts` | `list`, `get`, `create`, `update`, `discard`, `run`, `publish` |
 | `runs` | `list`, `get`, `trigger` |
@@ -46,6 +48,8 @@ Examples:
 
 ```bash
 zap zaps list --account <account-id> --folder <folder-id>
+ZAP_WORKFLOW_ACCESS_TOKEN=... zap zaps config
+ZAP_WORKFLOW_ACCESS_TOKEN=... zap zaps config <workflow-api-zap-id>
 zap workflows create --name my-flow --private --confirm
 zap workflows validate ./flow
 zap drafts create <workflow> --confirm
@@ -56,7 +60,9 @@ zap runs list <workflow> --kind draft
 
 ## Limits
 
-- The Zapier SDK does not expose classic Zap step configuration. `zaps list/search` return metadata only; `zaps convert` is the path to readable logic, and it only works on Zaps owned by the logged-in user.
+- `zap zaps list` and `zap zaps search` use Zapier Manager and return metadata only. Their numeric Zap id is not the Workflow API id.
+- `zap zaps config` reads steps and inputs from `GET https://api.zapier.com/v2/zaps`. Set `ZAP_WORKFLOW_ACCESS_TOKEN` to a Workflow API user access token with scope `zap`, `zap:all`, or `zap:account:all`. That token is separate from `zapier-sdk login`. Docs: https://docs.zapier.com/api-reference/workflow/zaps/get-zaps-v2
+- `zaps convert` is the path from a classic Zap to a code workflow, and it only works on Zaps owned by the logged-in user.
 - Code-workflow methods are marked experimental by Zapier and may change shape. The SDK is pinned exactly.
 
 ## Development
